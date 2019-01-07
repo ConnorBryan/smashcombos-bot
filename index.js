@@ -79,6 +79,6 @@ app.post(`/characters/:character/combos`, async (req, res) => {
   }
 });
 
-app.listen(port, () =>
+app.listen(process.env.PORT, () =>
   console.info(`SmashCombos Bot listening on port ${process.env.PORT}.`)
 );
