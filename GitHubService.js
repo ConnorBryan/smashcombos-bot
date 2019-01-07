@@ -1,3 +1,5 @@
+const axios = require("axios");
+
 module.exports = class GitHubService {
   static async getExistingCharacterData(character) {
     try {
