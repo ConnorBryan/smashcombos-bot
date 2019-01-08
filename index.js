@@ -10,7 +10,12 @@ const GitHubService = require("./GitHubService");
 const app = express();
 
 // Middleware
-app.use(bodyParser());
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
+app.use(bodyParser.json());
 app.use(
   cors({
     origin: process.env.ORIGIN
@@ -71,6 +76,69 @@ app.post(`/characters/:character/combos`, async (req, res) => {
     }
   } catch (error) {
     console.log("General error.");
+
+    return res.json({
+      success: false
+    });
+  }
+});
+
+// Edit Combo
+app.post(`/characters/:character/combos/:comboId`, async (req, res) => {
+  try {
+    const { character, comboId } = req.params;
+    const { combo } = req.body;
+    const uuid = getUuid();
+    const branch = `edit-combo/${character}/${uuid}`;
+    const existingCharacterData = await GitHubService.getExistingCharacterData(
+      character
+    );
+    const newCharacterData = {
+      ...existingCharacterData,
+      combos: existingCharacterData.combos.map(existingCombo =>
+        existingCombo.uuid === comboId ? combo : existingCombo
+      )
+    };
+    const newBranch = await GitHubService.createBranch(branch);
+
+    if (newBranch) {
+      const newCommit = await GitHubService.createCommit(
+        character,
+        newCharacterData,
+        branch
+      );
+
+      if (newCommit) {
+        const newPullRequest = await GitHubService.createPullRequest(
+          branch,
+          `Editing a combo for ${character}`,
+          "..."
+        );
+
+        if (newPullRequest) {
+          return res.json({
+            success: true
+          });
+        } else {
+          return res.json({
+            success: false,
+            error: `Failed to create a new pull request.`
+          });
+        }
+      } else {
+        return res.json({
+          success: false,
+          error: `Failed to create a new commit.`
+        });
+      }
+    } else {
+      return res.json({
+        success: false,
+        error: `Failed to create a new branch.`
+      });
+    }
+  } catch (error) {
+    console.error("General error in Edit Combo");
 
     return res.json({
       success: false
