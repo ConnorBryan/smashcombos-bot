@@ -22,19 +22,28 @@ app.use(
   })
 );
 
-// Add Combo
-app.post(`/characters/:character/combos`, async (req, res) => {
+// Test
+app.get("/", (req, res) =>
+  res.json({
+    success: true,
+    message: "Accessed SmashCombot Bot!"
+  })
+);
+
+// Edit Profile
+app.post(`/characters/:character/profile`, async (req, res) => {
   try {
     const { character } = req.params;
-    const { combo } = req.body;
+    const { description, tags } = req.body;
     const uuid = getUuid();
-    const branch = `add-combo/${character}/${uuid}`;
+    const branch = `edit-profile/${character}/${uuid}`;
     const existingCharacterData = await GitHubService.getExistingCharacterData(
       character
     );
     const newCharacterData = {
       ...existingCharacterData,
-      combos: [...existingCharacterData.combos, combo]
+      description,
+      tags
     };
     const newBranch = await GitHubService.createBranch(branch);
 
@@ -48,7 +57,7 @@ app.post(`/characters/:character/combos`, async (req, res) => {
       if (newCommit) {
         const newPullRequest = await GitHubService.createPullRequest(
           branch,
-          `Adding a combo for ${character}`,
+          `Editing the profile of ${character}`,
           "..."
         );
 
@@ -75,7 +84,7 @@ app.post(`/characters/:character/combos`, async (req, res) => {
       });
     }
   } catch (error) {
-    console.log("General error.");
+    console.error("General error in Edit Profile");
 
     return res.json({
       success: false
@@ -139,6 +148,67 @@ app.post(`/characters/:character/combos/:comboId`, async (req, res) => {
     }
   } catch (error) {
     console.error("General error in Edit Combo");
+
+    return res.json({
+      success: false
+    });
+  }
+});
+
+// Add Combo
+app.post(`/characters/:character/combos`, async (req, res) => {
+  try {
+    const { character } = req.params;
+    const { combo } = req.body;
+    const uuid = getUuid();
+    const branch = `add-combo/${character}/${uuid}`;
+    const existingCharacterData = await GitHubService.getExistingCharacterData(
+      character
+    );
+    const newCharacterData = {
+      ...existingCharacterData,
+      combos: [...existingCharacterData.combos, combo]
+    };
+    const newBranch = await GitHubService.createBranch(branch);
+
+    if (newBranch) {
+      const newCommit = await GitHubService.createCommit(
+        character,
+        newCharacterData,
+        branch
+      );
+
+      if (newCommit) {
+        const newPullRequest = await GitHubService.createPullRequest(
+          branch,
+          `Adding a combo for ${character}`,
+          "..."
+        );
+
+        if (newPullRequest) {
+          return res.json({
+            success: true
+          });
+        } else {
+          return res.json({
+            success: false,
+            error: `Failed to create a new pull request.`
+          });
+        }
+      } else {
+        return res.json({
+          success: false,
+          error: `Failed to create a new commit.`
+        });
+      }
+    } else {
+      return res.json({
+        success: false,
+        error: `Failed to create a new branch.`
+      });
+    }
+  } catch (error) {
+    console.log("General error.");
 
     return res.json({
       success: false
