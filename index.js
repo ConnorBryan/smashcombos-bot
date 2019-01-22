@@ -6,6 +6,7 @@ const express = require("express");
 const getUuid = require("uuid/v4");
 const sha1 = require("sha1");
 const GitHubService = require("./GitHubService");
+const { getUsername } = require("./helpers");
 
 const app = express();
 
@@ -34,7 +35,8 @@ app.get("/", (req, res) =>
 app.post(`/characters/:character/profile`, async (req, res) => {
   try {
     const { character } = req.params;
-    const { description, tags } = req.body;
+    const { user, description, tags } = req.body;
+    const username = getUsername(user);
     const uuid = getUuid();
     const branch = `edit-profile/${character}/${uuid}`;
     const existingCharacterData = await GitHubService.getExistingCharacterData(
@@ -96,7 +98,8 @@ app.post(`/characters/:character/profile`, async (req, res) => {
 app.post(`/characters/:character/combos/:comboId`, async (req, res) => {
   try {
     const { character, comboId } = req.params;
-    const { combo } = req.body;
+    const { user, combo } = req.body;
+    const username = getUsername(user);
     const uuid = getUuid();
     const branch = `edit-combo/${character}/${uuid}`;
     const existingCharacterData = await GitHubService.getExistingCharacterData(
@@ -121,7 +124,7 @@ app.post(`/characters/:character/combos/:comboId`, async (req, res) => {
         const newPullRequest = await GitHubService.createPullRequest(
           branch,
           `Editing a combo for ${character}`,
-          "..."
+          `Submitted by ${username}`
         );
 
         if (newPullRequest) {
@@ -159,7 +162,8 @@ app.post(`/characters/:character/combos/:comboId`, async (req, res) => {
 app.post(`/characters/:character/combos`, async (req, res) => {
   try {
     const { character } = req.params;
-    const { combo } = req.body;
+    const { user, combo } = req.body;
+    const username = getUsername(user);
     const uuid = getUuid();
     const branch = `add-combo/${character}/${uuid}`;
     const existingCharacterData = await GitHubService.getExistingCharacterData(
@@ -182,7 +186,7 @@ app.post(`/characters/:character/combos`, async (req, res) => {
         const newPullRequest = await GitHubService.createPullRequest(
           branch,
           `Adding a combo for ${character}`,
-          "..."
+          `Submitted by ${username}`
         );
 
         if (newPullRequest) {
